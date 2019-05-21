@@ -43,6 +43,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * This fragment controls Bluetooth to communicate with other devices.
@@ -61,10 +64,15 @@ public class BluetoothChatFragment extends Fragment {
     private EditText mOutEditText;
     private Button mSendButton;
 
+    public int myScore=0;
+    public  int otherScore=0;
+
     /**
      * Name of the connected device
      */
     private String mConnectedDeviceName = null;
+
+    List<String> messaegeList=null;
 
     /**
      * Array adapter for the conversation thread
@@ -92,6 +100,10 @@ public class BluetoothChatFragment extends Fragment {
         setHasOptionsMenu(true);
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        messaegeList=new ArrayList<>();
+        myScore=0;
+        otherScore=0;
+        messaegeList.clear();
 
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -161,7 +173,7 @@ public class BluetoothChatFragment extends Fragment {
 
         // Initialize the array adapter for the conversation thread
         mConversationArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.message);
-
+       // mConversationArrayAdapter.add("Me: Welcome");
         mConversationView.setAdapter(mConversationArrayAdapter);
 
         // Initialize the compose field with a listener for the return key
@@ -175,7 +187,38 @@ public class BluetoothChatFragment extends Fragment {
                 if (null != view) {
                     TextView textView = (TextView) view.findViewById(R.id.edit_text_out);
                     String message = textView.getText().toString();
-                    sendMessage(message);
+                    //check message
+                    Log.i("Message", message);
+                    if(checkDictionary(message)) {
+                        if (messaegeList.size() <= 0) {
+                            messaegeList.add(message);
+                            myScore+=message.length();
+                            sendMessage(message);
+                            mSendButton.setEnabled(false);
+                            Log.i("Message", message);
+                        } else {
+                            if(checkInList(message)) {//chech list have or have not
+
+                                String checkmessage = messaegeList.get(messaegeList.size() - 1);
+                                char chMessage = message.charAt(0);
+                                char chCheckmessage = checkmessage.charAt(checkmessage.length() - 1);
+                                Log.i("ChMessage  : "+chMessage,"chCheckmessage  : "+chCheckmessage);
+                                if (chMessage == chCheckmessage) {
+                                    myScore+=message.length();
+                                    for (int i = 0; i < messaegeList.size(); i++) {
+                                        Log.i("Data: ", messaegeList.get(i));
+                                    }
+                                    Log.i("Finish"+myScore, "Message"+otherScore);
+                                    sendMessage(message);
+                                    mSendButton.setEnabled(false);
+                                }
+                                else {
+                                    Log.i("Error","You must not write??? Other  People must done!!!");
+                                }
+                            }
+                        }
+                    }
+
                 }
             }
         });
@@ -299,15 +342,17 @@ public class BluetoothChatFragment extends Fragment {
                     byte[] writeBuf = (byte[]) msg.obj;
                     // construct a string from the buffer
                     String writeMessage = new String(writeBuf);
+
                     mConversationArrayAdapter.add("Me:  " + writeMessage);
                     break;
                 case Constants.MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;
                     // construct a string from the valid bytes in the buffer
-                    String
-
-                            readMessage = new String(readBuf, 0, msg.arg1);
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+                    messaegeList.add(readMessage);
+                    otherScore+=readMessage.length();
                     mConversationArrayAdapter.add(mConnectedDeviceName + ":  " + readMessage);
+                    mSendButton.setEnabled(true);
                     break;
                 case Constants.MESSAGE_DEVICE_NAME:
                     // save the connected device's name
@@ -400,5 +445,20 @@ public class BluetoothChatFragment extends Fragment {
         }
         return false;
     }
-
+    private boolean checkDictionary(String message){
+        boolean check=false;
+        if(!message.equals(""))
+            check=true;
+        else
+            check=false;
+        return check;
+    }
+    private boolean checkInList(String message){
+        boolean check=false;
+        if(!message.equals(""))
+            check=true;
+        else
+            check=false;
+        return check;
+    }
 }
